@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 from database.init_db import init_database
-from logic.flow1_rules import get_all_alerts, get_summary_stats
+from services.alert_service import get_all_alerts, get_summary_stats
 from ai.enrichment import enrich_alert, discover_patterns
 from config import MAX_ALERTS_TO_ENRICH
 import os
@@ -12,7 +12,7 @@ if not os.path.exists("database/restaurant.db"):
 
 
 def get_top_alerts():
-    from logic.flow1_rules import get_reorder_discipline, get_waste_cost, get_stockout_frequency
+    from services.alert_service import get_reorder_discipline, get_waste_cost, get_stockout_frequency
 
     reorder_alerts = get_reorder_discipline()
     waste_alerts = get_waste_cost()
