@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Action Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .alert-Reorder   { border-left: 5px solid #dc3545; }
+        .alert-High      { border-left: 5px solid #ffc107; }
+        .alert-Stockout  { border-left: 5px solid #0dcaf0; }
+        .card { margin-bottom: 20px; }
+        .pattern-box {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+        pre { white-space: pre-wrap; font-family: inherit; }
+        .advice-loading { color: #6c757d; font-style: italic; }
+        .advice-panel { min-height: 120px; }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="fw-bold">Restaurant Action Center</h1>
+            <p class="text-muted">
+                Auto-generated risk report
+            </p>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5>Unique Items</h5>
+                    <h2>{{ stats.total_items }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5>Most Frequent Reorder Risk</h5>
+                    {% if hero_stats.most_frequent_reorder_risk %}
+                    <h2>{{ hero_stats.most_frequent_reorder_risk.pct_days_low }}%</h2>
+                    <small>{{ hero_stats.most_frequent_reorder_risk.item }}</small>
+                    {% else %}
+                    <h2>None</h2>
+                    <small>No reorder alerts triggered</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5>Highest Waste Loss</h5>
+                    {% if hero_stats.highest_waste_loss %}
+                    <h2>${{ hero_stats.highest_waste_loss.est_total_waste_value }}</h2>
+                    <small>{{ hero_stats.highest_waste_loss.item }}</small>
+                    {% else %}
+                    <h2>None</h2>
+                    <small>No waste alerts triggered</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5>Most Urgent Stockout Risk</h5>
+                    {% if hero_stats.most_urgent_stockout_risk %}
+                    <h2>{{ hero_stats.most_urgent_stockout_risk.pct_days_stockout_risk }}%</h2>
+                    <small>{{ hero_stats.most_urgent_stockout_risk.item }}</small>
+                    {% else %}
+                    <h2>None</h2>
+                    <small>No stockout alerts triggered</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flagged Alerts -->
+    <h3 class="mb-1">⚠️ Flagged Alerts</h3>
+    <p class="text-muted mb-3">
+        3 aggregate rules over 100 days:
+        Reorder Discipline &bull;
+        Total Waste Cost &bull;
+        Stockout Frequency
+    </p>
+
+    {% for alert in top_alerts %}
+    <div class="card shadow-sm alert-{{ alert.alert_type.split()[0] }}">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+
+                    {% if alert.alert_type == 'Reorder Discipline Issue' %}
+                    <h5 class="fw-bold">{{ alert.item }}</h5>
+                    <span class="badge bg-danger">Reorder Discipline Issue</span>
+                    <table class="table table-sm mt-2">
+                        <tr><td>📦 Category</td><td>{{ alert.category }}</td></tr>
+                        <tr><td>🏭 Supplier</td><td>{{ alert.supplier }}</td></tr>
+                        <tr><td>📅 Days Tracked</td><td>{{ alert.total_days }}</td></tr>
+                        <tr><td>⚠️ Days Running Low</td><td>{{ alert.days_low }}</td></tr>
+                        <tr><td>📉 % Days Low</td><td>{{ alert.pct_days_low }}%</td></tr>
+                        <tr><td>📦 Avg Stock</td><td>{{ alert.avg_stock }}</td></tr>
+                    </table>
+
+                    {% elif alert.alert_type == 'High Total Waste Cost' %}
+                    <h5 class="fw-bold">{{ alert.item }}</h5>
+                    <span class="badge bg-warning text-dark">High Total Waste Cost</span>
+                    <table class="table table-sm mt-2">
+                        <tr><td>📏 Unit</td><td>{{ alert.unit }}</td></tr>
+                        <tr><td>🗑️ Avg Waste %</td><td>{{ alert.avg_waste_pct }}%</td></tr>
+                        <tr><td>📈 Avg Daily Usage</td><td>{{ alert.avg_daily_usage }}</td></tr>
+                        <tr><td>💰 Avg Price/Unit</td><td>${{ alert.avg_price }}</td></tr>
+                        <tr><td>💸 Total Waste Value</td><td>${{ alert.est_total_waste_value }}</td></tr>
+                    </table>
+
+                    {% elif alert.alert_type == 'Stockout Frequency Risk' %}
+                    <h5 class="fw-bold">{{ alert.item }}</h5>
+                    <span class="badge bg-info">Stockout Frequency Risk</span>
+                    <table class="table table-sm mt-2">
+                        <tr><td>📦 Category</td><td>{{ alert.category }}</td></tr>
+                        <tr><td>🏭 Supplier</td><td>{{ alert.supplier }}</td></tr>
+                        <tr><td>📅 Days Tracked</td><td>{{ alert.total_days }}</td></tr>
+                        <tr><td>⚠️ Days at Risk</td><td>{{ alert.days_at_risk }}</td></tr>
+                        <tr><td>📉 % Days at Risk</td><td>{{ alert.pct_days_stockout_risk }}%</td></tr>
+                        <tr><td>📦 Avg Days of Stock</td><td>{{ alert.avg_days_of_stock }}</td></tr>
+                        <tr><td>🚚 Avg Lead Time</td><td>{{ alert.avg_lead_time }} days</td></tr>
+                    </table>
+                    {% endif %}
+
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">AI Recommendations</h6>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            id="button-{{ loop.index0 }}"
+                            data-alert='{{ alert | tojson }}'
+                            onclick="loadRecommendation({{ loop.index0 }})"
+                        >
+                            Get AI Suggestions
+                        </button>
+                    </div>
+                    <pre id="advice-{{ loop.index0 }}" class="advice-panel">Click "Get AI Suggestions" to load a summary and 3 actions.</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+
+</div>
+<script>
+    async function loadRecommendation(index) {
+        const button = document.getElementById(`button-${index}`);
+        const adviceEl = document.getElementById(`advice-${index}`);
+        if (!button || !adviceEl) {
+            return;
+        }
+
+        const alertPayload = button.dataset.alert;
+        if (!alertPayload) {
+            adviceEl.textContent = "Alert data is unavailable for this recommendation.";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Loading...";
+        adviceEl.textContent = "Loading recommendations...";
+        adviceEl.classList.add("advice-loading");
+
+        try {
+            const response = await fetch("/api/enrich-alert", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: alertPayload
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.advice || "AI recommendations are unavailable right now.");
+            }
+
+            adviceEl.textContent = result.advice || "Recommendations unavailable.";
+            adviceEl.classList.remove("advice-loading");
+            button.textContent = "Reload AI Suggestions";
+            button.disabled = false;
+        } catch (error) {
+            adviceEl.textContent = error.message || "AI recommendations are unavailable right now.";
+            adviceEl.classList.remove("advice-loading");
+            button.textContent = "Retry AI Suggestions";
+            button.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
