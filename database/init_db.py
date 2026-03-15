@@ -1,10 +1,10 @@
 import pandas as pd
-import sqlite3
 import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import DB_PATH, CSV_PATH
+from config import DATABASE_BACKEND, DB_PATH, CSV_PATH
+from database.client import get_database_client
 
 
 def clean_data(df):
@@ -114,6 +114,10 @@ def clean_data(df):
 def init_database():
     print("Initializing database...")
 
+    if DATABASE_BACKEND != "sqlite":
+        print(f"Skipping local database initialization for backend: {DATABASE_BACKEND}")
+        return True
+
     if not os.path.exists(CSV_PATH):
         print(f"ERROR: CSV not found at {CSV_PATH}")
         return False
@@ -127,12 +131,9 @@ def init_database():
     df = clean_data(df)
 
     # Save to SQLite
-    conn = sqlite3.connect(DB_PATH)
-    df.to_sql("inventory", conn, if_exists="replace", index=False)
-
-    # Verify what was saved
-    count = conn.execute("SELECT COUNT(*) FROM inventory").fetchone()[0]
-    conn.close()
+    with get_database_client() as conn:
+        df.to_sql("inventory", conn, if_exists="replace", index=False)
+        count = conn.execute("SELECT COUNT(*) FROM inventory").fetchone()[0]
 
     print(f"✓ Saved {count} clean rows to SQLite at {DB_PATH}")
     print("Database ready!")

@@ -2,12 +2,12 @@ from flask import Flask, render_template, jsonify, request
 from database.init_db import init_database
 from services.alert_service import get_all_alerts, get_summary_stats
 from ai.enrichment import enrich_alert, discover_patterns
-from config import MAX_ALERTS_TO_ENRICH
+from config import DATABASE_BACKEND, DB_PATH, MAX_ALERTS_TO_ENRICH
 import os
 
 app = Flask(__name__)
 
-if not os.path.exists("database/restaurant.db"):
+if DATABASE_BACKEND == "sqlite" and not os.path.exists(DB_PATH):
     init_database()
 
 
