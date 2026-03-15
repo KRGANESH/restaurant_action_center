@@ -148,47 +148,4 @@ If `PORT` is not set, the app defaults to `5000`.
 }
 ```
 
-## Database Design and Future Scale
 
-This project originally used direct SQLite calls inside the service layer. It has been refactored to make future migration easier:
-
-- connection creation is centralized in `database/client.py`
-- query execution lives in `database/repository.py`
-- application routes and business logic no longer open SQLite connections directly
-- backend choice is controlled by `DATABASE_BACKEND`
-
-This means moving from SQLite to BigQuery would mainly involve:
-
-1. adding a `BigQueryInventoryRepository`
-2. extending `get_database_client()` if needed
-3. mapping the existing repository methods to BigQuery queries
-
-Because the alert service now depends on a repository interface rather than `sqlite3`, the migration path is much cleaner than before.
-
-## Notes
-
-- SQLite is used for local development and assignment simplicity.
-- BigQuery is not implemented yet, but the repository pattern is now in place to support that migration.
-- The AI recommendation flow gracefully returns user-friendly errors when the AI service is unavailable.
-
-## Possible Improvements
-
-- Add a `BigQueryInventoryRepository`
-- Add automated tests for repository and alert rules
-- Add pagination or filtering for larger alert sets
-- Move data ingestion into a dedicated ETL command
-- Add Docker support
-- Add `.env.example` and stronger secret-handling guidance
-
-## Assignment Fit
-
-For the evaluation criterion about future scale, this project now has a clearer answer:
-
-- the app is still lightweight and local-first
-- database access is abstracted behind a repository layer
-- SQLite is no longer hardcoded into the alert service
-- the structure is better prepared for a future move to a warehouse such as BigQuery
-
-## License
-
-This project is for educational and assignment use unless you choose to add a separate license.
